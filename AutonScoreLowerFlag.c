@@ -55,7 +55,7 @@ void driveStraightDistance(int inches, int masterPower, int wheelRadius, float g
     powerLeftDrive(masterPower);
     powerRightDrive(slavePower);
     error = SensorValue[leftEncoder] - SensorValue[rightEncoder];
-    slavePower += sideError * sideKp;
+    slavePower = sideError * sideKp;
 		resetDriveEncoders();
     wait1Msec(100);
 
