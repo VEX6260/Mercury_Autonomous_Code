@@ -16,18 +16,23 @@
 
 #define abs(X) ((X<0)?-1*X:X)
 
-void driveStraightDistance(int inches, int masterPower, float gearRatio);
+void driveStraightDistance(int inches, int masterPower);
 void powerLeftDrive(int power);
 void powerRightDrive(int power);
 void resetDriveEncoders();
+int inchesToTicks(int inches, float gearRatio);
 
 //Using Proportional control, we will drive forward in a straight line. Proportionality constant needs to be tested and fine tuned
 task main()	{
-driveStraightDistance(42, 70, 0.5);
+driveStraightDistance(42, 70);
 }
 
-void driveStraightDistance(int inches, int masterPower, float gearRatio)	{
-	int tickGoal = ((inches/(2*3.141528*2))*627.2)* gearRatio;
+int inchesToTicks(int inches, float gearRatio)	{
+	int tick = ((inches/(2*3.141528*2))*627.2)* gearRatio;
+	return tick;
+}
+void driveStraightDistance(int inches, int masterPower)	{
+	int tickGoal = inchesToTicks(inches, 0.5);
   int totalTicks = 0;//This will count up the total encoder ticks despite the fact that the encoders are constantly reset.
 
   int error;
@@ -37,6 +42,7 @@ void driveStraightDistance(int inches, int masterPower, float gearRatio)	{
   float proportion;
   int integralRaw;
   float integral;
+  float integralActiveZone = inchesToTicks(3, 0.5);//zone before target where proportionality constant starts to fail and cannot move the robot. use testing procedure to start integral active zone slightly before the kp starts to fail
 
  	bool timerBool = true; //timer based on error to stop oscillation
 
@@ -46,14 +52,19 @@ void driveStraightDistance(int inches, int masterPower, float gearRatio)	{
   //Monitor 'totalTicks', instead of the values of the encoders which are constantly reset.
   wait1Msec(40);
   while(timerBool)	{
-  	totalTicks += (SensorValue[leftEncoder]+SensorValue[rightEncoder])/2;
+  	totalTicks += (SensorValue[leftEncoder]- SensorValue[rightEncoder])/2;
   	error = tickGoal - totalTicks;
   	proportion = error * driveKp;
 
-  	integralRaw += error;
+  	if(error < integralActiveZone)	{ // Unless the robot is near the target, the integral will not start accumulating. Used to control integral variable
+  		integralRaw += error;
+  	}
+  	else	{
+  		integralRaw = 0;
+  	}
   	integral = driveKi * integralRaw;
 
-  	masterPower = proportion; //adding proportion, integral, and derivative
+  	masterPower = proportion + integral; //adding proportion, integral, and derivative
 
     powerLeftDrive(masterPower);
     powerRightDrive(masterPower);
@@ -61,7 +72,7 @@ void driveStraightDistance(int inches, int masterPower, float gearRatio)	{
 		resetDriveEncoders();
     wait1Msec(40);
 
-    if(error < 50)	{ //edit the condition later based on experimental results
+    if(error < 1)	{ //edit the condition later based on experimental results
     	timerBool = false;
     }
 
