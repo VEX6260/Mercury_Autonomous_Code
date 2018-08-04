@@ -40,6 +40,7 @@ void driveStraightDistance(int inches, int masterPower, int wheelRadius, float g
   float driveKp = 0.2; //follow testing procedure to fine tune
   float sideKp = 0.2; //follow testing procedure to fine tune. fine tune this piece first.
 
+
   resetDriveEncoders(); //reset encoders
 	powerLeftDrive(masterPower);//start drive motors
   powerRightDrive(slavePower);
@@ -47,14 +48,14 @@ void driveStraightDistance(int inches, int masterPower, int wheelRadius, float g
   wait1Msec(10);
   while(abs(totalTicks) < tickGoal)	{
 
-  	totalTicks+= SensorValue[leftEncoder];
+  	totalTicks += SensorValue[leftEncoder];
   	error = tickGoal - totalTicks;
   	masterPower = error * driveKp;
 
     //Proportional algorithm to keep the robot going straight.
     powerLeftDrive(masterPower);
     powerRightDrive(slavePower);
-    error = SensorValue[leftEncoder] - SensorValue[rightEncoder];
+    sideError = SensorValue[leftEncoder] - SensorValue[rightEncoder];
     slavePower = sideError * sideKp;
 		resetDriveEncoders();
     wait1Msec(100);
