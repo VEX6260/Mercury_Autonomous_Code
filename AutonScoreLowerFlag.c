@@ -39,14 +39,14 @@ void driveStraightDistance(int inches, int masterPower, int wheelRadius, float g
   int error;
   float driveKp = 0.2; //follow testing procedure to fine tune
   float sideKp = 0.2; //follow testing procedure to fine tune. fine tune this piece first.
-
+ 	bool timerBool = true; //timer based on error to stop oscillation
 
   resetDriveEncoders(); //reset encoders
 	powerLeftDrive(masterPower);//start drive motors
   powerRightDrive(slavePower);
   //Monitor 'totalTicks', instead of the values of the encoders which are constantly reset.
   wait1Msec(10);
-  while(abs(totalTicks) < tickGoal)	{
+  while(timerBool)	{
 
   	totalTicks += SensorValue[leftEncoder];
   	error = tickGoal - totalTicks;
@@ -62,6 +62,10 @@ void driveStraightDistance(int inches, int masterPower, int wheelRadius, float g
 
     //Add this iteration's encoder values to totalTicks.
     totalTicks+= SensorValue[leftEncoder];
+
+    if(error < 30)	{ //edit the condition later based on experimental results
+    	timerBool = false;
+    }
   }
   powerLeftDrive(0); // Stop the loop once the encoders have counted up the correct number of encoder ticks.
   powerRightDrive(0);
