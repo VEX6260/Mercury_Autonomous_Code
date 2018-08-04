@@ -58,11 +58,16 @@ void driveStraightDistance(int inches, int masterPower)	{
 
   	if(error < integralActiveZone)	{ // Unless the robot is near the target, the integral will not start accumulating. Used to control integral variable
   		integralRaw += error;
+
   	}
   	else	{
   		integralRaw = 0;
   	}
   	integral = driveKi * integralRaw;
+
+  	if(integral > 28)	{	//hard limit on integral value to prevent from blowing up. making sure motor speed doesnot exceed this value in the integral active zone.
+  		integral = 28;
+  	}
 
   	masterPower = proportion + integral; //adding proportion, integral, and derivative
 
