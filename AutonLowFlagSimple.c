@@ -21,51 +21,43 @@ Update log
 
 #define abs(X) ((X<0)?-1*X:X)
 
-void driveStraightDistance(int inches, int masterPower, int wheelRadius, float gearRatio);
+void driveStraightDistance(int inches, int masterPower, float gearRatio);
 void powerLeftDrive(int power);
 void powerRightDrive(int power);
 void resetDriveEncoders();
 
 //Using Proportional control, we will drive forward in a straight line. Proportionality constant needs to be tested and fine tuned
 task main()	{
-driveStraightDistance(42, 70, 2, 0.5);
+driveStraightDistance(42, 70, 0.5);
 }
 
-void driveStraightDistance(int inches, int masterPower, int wheelRadius, float gearRatio)	{
-	int tickGoal = ((inches/(2*3.141528*wheelRadius))*627.2)* gearRatio;
+void driveStraightDistance(int inches, int masterPower, float gearRatio)	{
+	int tickGoal = ((inches/(2*3.141528*2))*627.2)* gearRatio;
   int totalTicks = 0;//This will count up the total encoder ticks despite the fact that the encoders are constantly reset.
-  int slavePower = masterPower; //left side is master side
-  int sideError;
   int error;
   float driveKp = 0.2; //follow testing procedure to fine tune
-  float sideKp = 0.2; //follow testing procedure to fine tune. fine tune this piece first.
  	bool timerBool = true; //timer based on error to stop oscillation
 
   resetDriveEncoders(); //reset encoders
 	powerLeftDrive(masterPower);//start drive motors
-  powerRightDrive(slavePower);
+  powerRightDrive(masterPower);
   //Monitor 'totalTicks', instead of the values of the encoders which are constantly reset.
-  wait1Msec(10);
+  wait1Msec(40);
   while(timerBool)	{
-
-  	totalTicks += SensorValue[leftEncoder];
+  	totalTicks += (SensorValue[leftEncoder]+SensorValue[rightEncoder])/2;
   	error = tickGoal - totalTicks;
   	masterPower = error * driveKp;
 
-    //Proportional algorithm to keep the robot going straight.
     powerLeftDrive(masterPower);
     powerRightDrive(masterPower);
-    sideError = SensorValue[leftEncoder] - SensorValue[rightEncoder];
-    slavePower = sideError * sideKp;
+
 		resetDriveEncoders();
     wait1Msec(40);
 
-    //Add this iteration's encoder values to totalTicks.
-    totalTicks+= SensorValue[leftEncoder];
-
-    if(error < 30)	{ //edit the condition later based on experimental results
+    if(error < 50)	{ //edit the condition later based on experimental results
     	timerBool = false;
     }
+
   }
   powerLeftDrive(0); // Stop the loop once the encoders have counted up the correct number of encoder ticks.
   powerRightDrive(0);
