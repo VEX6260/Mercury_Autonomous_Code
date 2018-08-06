@@ -1,3 +1,4 @@
+#pragma config(Sensor, in1,    gyro,           sensorGyro)
 #pragma config(Sensor, dgtl1,  leftEncoder,    sensorQuadEncoder)
 #pragma config(Sensor, dgtl3,  rightEncoder,   sensorQuadEncoder)
 #pragma config(Motor,  port1,           flipper,       tmotorVex393_HBridge, openLoop)
@@ -47,15 +48,16 @@ void driveStraightDistance(int inches, int masterPower)	{
   int integralRaw;
   float integral;
   //float integralActiveZone = inchesToTicks(3, 0.5);//zone before target where proportionality constant starts to fail and cannot move the robot. use testing procedure to start integral active zone slightly before the kp starts to fail
- 	bool timerBool = true; //timer based on error to stop oscillation
 
   resetDriveEncoders(); //reset encoders
+  SensorValue[gyro] = 90; //reset gyro
 	powerLeftDrive(masterPower);//start drive motors
   powerRightDrive(masterPower);
 
   wait1Msec(40);
 
   while(totalTicks < tickGoal)	{
+  	//first adjust master side based on target distance
   	totalTicks += SensorValue[leftEncoder];
   	error = tickGoal - totalTicks;
   	proportion = error * driveKp;
@@ -75,17 +77,16 @@ void driveStraightDistance(int inches, int masterPower)	{
   	masterPower = proportion + integral; //adding proportion, integral, and later derivative
 
     powerLeftDrive(masterPower);
-    //powerRightDrive(masterPower);
+    powerRightDrive(masterPower);
 
     wait1Msec(40);
+    //next adjust slave side based on gyro data
 
+		int error = 90 - SensorValue[gyro];
+		powerRightDrive(masterPower - (error * angleKp));
 
 		resetDriveEncoders();
     wait1Msec(40);
-
-    if(error < 1)	{ //edit the condition later based on experimental results
-    	timerBool = false;
-    }
 
   }
   powerLeftDrive(0); // Stop the loop once the encoders have counted up the correct number of encoder ticks.
